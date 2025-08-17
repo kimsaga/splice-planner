@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<!-- Force desktop-style layout, even on mobile -->
 <meta name="viewport" content="width=1200, initial-scale=1">
 <title>Fiber Splice Planner – Simple</title>
 <style>
@@ -26,7 +25,9 @@
   .mode-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .mode-select{width:auto;min-width:180px;height:40px;font-weight:700}
   .toggle{display:flex;align-items:center;gap:8px}
-  .hamb{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);cursor:pointer}
+
+  /* FIXED hamburger top-right */
+  .hamb{position:fixed;top:10px;right:10px;z-index:1000;width:44px;height:44px;border-radius:10px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);cursor:pointer}
   .hamb span{display:block;width:18px;height:2px;background:#444;margin:2px 0}
 
   .splice-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;box-shadow:var(--shadow);margin-top:8px}
@@ -59,7 +60,7 @@
   tbody td{padding:10px;border-bottom:1px solid var(--border);font-size:14px;text-align:center;vertical-align:middle}
   tbody tr:last-child td{border-bottom:none}
 
-  /* Modal for copy fallback */
+  /* Modal */
   .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9999}
   .modal{background:#fff;border-radius:16px;max-width:900px;max-height:80vh;overflow:auto;border:1px solid var(--border);box-shadow:var(--shadow);padding:16px}
   .modal h3{margin:0 0 10px 0}
@@ -106,7 +107,6 @@
         </select>
         <label class="toggle"><input type="checkbox" id="swapAB"><span>Swap A/B in table</span></label>
       </div>
-      <button id="toggleGrid" class="hamb" title="Show/hide main grid"><div><span></span><span></span><span></span></div></button>
     </div>
 
     <!-- SINGLE -->
@@ -160,6 +160,9 @@
           <div class="inline-row" style="gap:10px;margin-top:6px">
             <button id="copyTable" class="btn" title="Copy as HTML + TSV">Copy table</button>
             <button id="copyFallback" class="btn" title="Open copy popup">Open copy popup</button>
+            <button id="copyPng" class="btn" title="Copy table as PNG">Copy PNG</button>
+            <button id="downloadPng" class="btn" title="Download table as PNG">Download PNG</button>
+            <button id="sharePng" class="btn" title="Share table image">Share…</button>
           </div>
           <div id="multiNote" class="small"></div>
           <div id="rowInfo" class="chip-info">
@@ -230,6 +233,9 @@
           <div class="inline-row" style="gap:10px;margin-top:6px">
             <button id="ponCopy" class="btn" title="Copy as HTML + TSV">Copy table</button>
             <button id="ponCopyFallback" class="btn" title="Open copy popup">Open copy popup</button>
+            <button id="ponCopyPng" class="btn" title="Copy table as PNG">Copy PNG</button>
+            <button id="ponDownloadPng" class="btn" title="Download table as PNG">Download PNG</button>
+            <button id="ponSharePng" class="btn" title="Share table image">Share…</button>
           </div>
 
           <div id="ponNote" class="small"></div>
@@ -247,6 +253,9 @@
     </div>
 
   </div>
+
+  <!-- Fixed hamburger -->
+  <button id="toggleGrid" class="hamb" title="Show/hide main grid"><div><span></span><span></span><span></span></div></button>
 
   <!-- Modal: copy fallback -->
   <div id="copyModal" class="modal-backdrop" aria-hidden="true">
@@ -267,6 +276,9 @@
       <textarea id="popupTSV" style="width:100%;height:120px;font-family:ui-monospace,Consolas,Menlo,monospace"></textarea>
     </div>
   </div>
+
+<!-- html2canvas for PNG export -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha256-zj6a2H6H6Yx4oQ0s+6m7R0J8Wg5E3gqWgY9xP8zJk8w=" crossorigin="anonymous"></script>
 
 <script>
 /* === Color schemes === */
@@ -328,10 +340,31 @@ function getSelNum(id){ return Math.max(1, parseInt(document.getElementById(id).
 function setRangeOverlayAndPill(posId, overlayId, pillId, schemeKey){ const idx=getSelNum(posId)-1, col=colorForIndex(SCHEMES[schemeKey], idx%12); document.getElementById(overlayId).style.background=col.hex; document.getElementById(pillId).textContent=String(idx+1); document.getElementById(posId).title=col.name; }
 function maxToNoTrunc(fromA,sizeA,startB,sizeB){ const maxLenB=Math.max(0,sizeB-startB+1); const limitByB=fromA+maxLenB-1; return Math.min(sizeA, limitByB); }
 function showLimit(reason){ const el=document.getElementById("limitInfo"); if(!reason){ el.style.display="none"; el.textContent=""; return; } el.style.display="inline-flex"; el.textContent=(reason==="B")?"Limited by Kabel B":"Limited by Kabel A"; }
-function onChangeFrom(){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); let desired=Math.max(multiSpanLen,2); let to=from+desired-1; const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } if(to<from+1) to=Math.min(cap,from+1); document.getElementById("mSelATo").value=String(to); multiSpanLen=to-from+1; updateLenInfo(); }
-function onChangeTo(adjustLen=true){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); let to=getSelNum("mSelATo"); if(to<from+1) to=from+1; if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } document.getElementById("mSelATo").value=String(to); if(adjustLen) multiSpanLen=to-from+1; updateLenInfo(); }
-function incTo(d){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); let to=getSelNum("mSelATo")+d; if(to<from+1) to=from+1; if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } document.getElementById("mSelATo").value=String(to); multiSpanLen=to-from+1; refreshMultiUI(false); }
-function incBStart(d){ const sizeB=getSize("B"); let start=getSelNum("mSelBStart")+d; if(start<1) start=1; if(start>sizeB) start=sizeB; document.getElementById("mSelBStart").value=String(start); onChangeTo(false); refreshMultiUI(false); }
+function onChangeFrom(){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); let desired=Math.max(multiSpanLen,2); let to=from+desired-1; const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } if(to<from+1) to=Math.min(cap,from+1); document.getElementById("mSelATo").value=String(to); multiSpanLen=to-from+1; enforceBStartCap(); updateLenInfo(); }
+function onChangeTo(adjustLen=true){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); let to=getSelNum("mSelATo"); if(to<from+1) to=from+1; if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } document.getElementById("mSelATo").value=String(to); if(adjustLen) multiSpanLen=to-from+1; enforceBStartCap(); updateLenInfo(); }
+function incTo(d){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); let to=getSelNum("mSelATo")+d; if(to<from+1) to=from+1; if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } document.getElementById("mSelATo").value=String(to); multiSpanLen=to-from+1; enforceBStartCap(); refreshMultiUI(false); }
+function enforceBStartCap(){
+  // Hard stop on B-start so we don't lose rows
+  const sizeB=getSize("B");
+  const from=getSelNum("mSelAFrom");
+  const to=getSelNum("mSelATo");
+  const len=Math.max(0,to-from+1);
+  let maxStart = Math.max(1, sizeB - len + 1);
+  let start = getSelNum("mSelBStart");
+  if(start>maxStart){ start=maxStart; document.getElementById("mSelBStart").value=String(start); }
+}
+function incBStart(d){
+  const sizeB=getSize("B");
+  const from=getSelNum("mSelAFrom");
+  const to=getSelNum("mSelATo");
+  const len=Math.max(0,to-from+1);
+  let maxStart = Math.max(1, sizeB - len + 1);
+  let start=getSelNum("mSelBStart")+d;
+  if(start<1) start=1;
+  if(start>maxStart) start=maxStart;
+  document.getElementById("mSelBStart").value=String(start);
+  onChangeTo(false); refreshMultiUI(false);
+}
 function updateLenInfo(){ const from=getSelNum("mSelAFrom"), to=getSelNum("mSelATo"); const len=to-from+1; document.getElementById("lenInfo").textContent=`Length: ${len} fibers`; }
 
 /* Build A/B table (PNG chips) */
@@ -339,8 +372,13 @@ function buildMapping(){
   const swap=document.getElementById("swapAB").checked;
   const sizeA=getSize("A"), sizeB=getSize("B"), schA=getScheme("A"), schB=getScheme("B");
   let fromA=getSelNum("mSelAFrom"), toA=getSelNum("mSelATo"); if(toA<fromA){ const t=fromA; fromA=toA; toA=t; }
-  const startB=getSelNum("mSelBStart");
-  const lenA=Math.max(0,toA-fromA+1), lenB=Math.max(0,sizeB-startB+1), rows=Math.max(0,Math.min(lenA,lenB));
+  let startB=getSelNum("mSelBStart");
+  const lenA=Math.max(0,toA-fromA+1);
+  // enforce hard stop on B-start here too
+  const maxStartB = Math.max(1, sizeB - lenA + 1);
+  if(startB>maxStartB){ startB=maxStartB; document.getElementById("mSelBStart").value=String(startB); }
+
+  const lenB=Math.max(0,sizeB-startB+1), rows=Math.max(0,Math.min(lenA,lenB));
 
   const nameA=(document.getElementById("nameA").value||"Kabel A").trim();
   const nameB=(document.getElementById("nameB").value||"Kabel B").trim();
@@ -348,7 +386,7 @@ function buildMapping(){
   let h1="Tube A", h2=nameA, h3="⇆", h4=nameB, h5="Tube B";
   if(swap){ h1="Tube B"; h2=nameB; h4=nameA; h5="Tube A"; }
 
-  let html=`<table style="border-collapse:collapse;width:100%;">
+  let html=`<table style="border-collapse:collapse;width:100%; background:#fff;">
     <thead><tr>
       <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h1}</th>
       <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h2}</th>
@@ -406,7 +444,6 @@ async function copyMapping(html, tsv){
       throw new Error("ClipboardItem not supported");
     }
   }catch(e){
-    // Fallback popup
     openCopyPopup(html, tsv);
   }
 }
@@ -455,7 +492,7 @@ function ponOnChangeFrom(){
   document.getElementById("ponTo").value=String(to);
   setPonOverlayAndPill("ponFrom","ponOvFrom","ponValFrom");
   setPonOverlayAndPill("ponTo","ponOvTo","ponValTo");
-  ponUpdateLen(); buildPONTable();
+  ponUpdateLen(); enforcePonBStartCap(); buildPONTable();
 }
 function ponOnChangeTo(){
   const from=parseInt(document.getElementById("ponFrom").value,10);
@@ -465,17 +502,7 @@ function ponOnChangeTo(){
   if(to>cap){ to=cap; showPonLimit(reason); } else { showPonLimit(""); }
   document.getElementById("ponTo").value=String(to);
   setPonOverlayAndPill("ponTo","ponOvTo","ponValTo");
-  ponUpdateLen(); buildPONTable();
-}
-function ponIncTo(delta){
-  const from=parseInt(document.getElementById("ponFrom").value,10);
-  let to=parseInt(document.getElementById("ponTo").value,10)+delta;
-  if(to<from) to=from;
-  const {cap,reason}=ponCapTo(from,to);
-  if(to>cap){ to=cap; showPonLimit(reason); } else { showPonLimit(""); }
-  document.getElementById("ponTo").value=String(to);
-  setPonOverlayAndPill("ponTo","ponOvTo","ponValTo");
-  ponUpdateLen(); buildPONTable();
+  ponUpdateLen(); enforcePonBStartCap(); buildPONTable();
 }
 
 /* B start for PON */
@@ -493,30 +520,49 @@ function setPonBOverlay(){
   document.getElementById("ponValB").textContent=String(start);
   document.getElementById("ponBStart").title=col.name;
 }
+function enforcePonBStartCap(){
+  const sizeB=getSize("B");
+  const from=parseInt(document.getElementById("ponFrom").value,10);
+  const to=parseInt(document.getElementById("ponTo").value,10);
+  const len=Math.max(0,to-from+1);
+  let maxStart = Math.max(1, sizeB - len + 1);
+  let start = parseInt(document.getElementById("ponBStart").value,10);
+  if(start>maxStart){ start=maxStart; document.getElementById("ponBStart").value=String(start); setPonBOverlay(); }
+}
 function ponIncB(delta){
-  const sizeB=getSize("B"); let s=parseInt(document.getElementById("ponBStart").value,10)+delta;
-  if(s<1) s=1; if(s>sizeB) s=sizeB; document.getElementById("ponBStart").value=String(s);
+  const sizeB=getSize("B");
+  const from=parseInt(document.getElementById("ponFrom").value,10);
+  const to=parseInt(document.getElementById("ponTo").value,10);
+  const len=Math.max(0,to-from+1);
+  let maxStart = Math.max(1, sizeB - len + 1);
+  let s=parseInt(document.getElementById("ponBStart").value,10)+delta;
+  if(s<1) s=1;
+  if(s>maxStart) s=maxStart;
+  document.getElementById("ponBStart").value=String(s);
   setPonBOverlay(); ponOnChangeTo(); buildPONTable();
 }
 
-/* Build PON table: Band | Splitter (Output) | ⇆ | Kabel B | Tube B */
+/* Build PON table */
 function buildPONTable(){
   const swap=document.getElementById("swapAB").checked; // here A=Splitter
   const nameSplit=(document.getElementById("nameA").value||"Splitter").trim();
   const nameB=(document.getElementById("nameB").value||"Kabel B").trim();
 
   const n=ponOutCount(), from=parseInt(document.getElementById("ponFrom").value,10), to=parseInt(document.getElementById("ponTo").value,10);
-  const startB=parseInt(document.getElementById("ponBStart").value,10);
+  let startB=parseInt(document.getElementById("ponBStart").value,10);
   const sizeB=getSize("B"), schB=getScheme("B");
 
   const lenSplit = Math.max(0,to-from+1);
+  const maxStartB = Math.max(1, sizeB - lenSplit + 1);
+  if(startB>maxStartB){ startB=maxStartB; document.getElementById("ponBStart").value=String(startB); setPonBOverlay(); }
+
   const lenB = Math.max(0,sizeB-startB+1);
   const rows = Math.max(0, Math.min(lenSplit, lenB));
 
   let h1="Band", h2=nameSplit+" – Output", h3="⇆", h4=nameB, h5="Tube B";
   if(swap){ h1="Tube B"; h2=nameB; h4=nameSplit+" – Output"; h5="Band"; }
 
-  let html=`<table style="border-collapse:collapse;width:100%;">
+  let html=`<table style="border-collapse:collapse;width:100%; background:#fff;">
     <thead><tr>
       <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h1}</th>
       <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h2}</th>
@@ -570,20 +616,60 @@ function buildPONTable(){
   return {html, tsv};
 }
 
-/* Copy for PON with fallback */
-async function copyMappingHTML(html, tsv){
-  try{
-    if(navigator.clipboard && window.ClipboardItem){
-      const blobHtml=new Blob([html],{type:"text/html"});
-      const blobText=new Blob([tsv],{type:"text/plain"});
-      await navigator.clipboard.write([new ClipboardItem({"text/html":blobHtml,"text/plain":blobText})]);
-      alert("Copied (HTML + text). Paste into Teams.");
-    }else{
-      throw new Error("ClipboardItem not supported");
-    }
-  }catch(e){
-    openCopyPopup(html, tsv);
+/* ---------- Image export / Share ---------- */
+async function tableToCanvas(tableEl){
+  return html2canvas(tableEl, { backgroundColor:'#ffffff', scale: window.devicePixelRatio>1?2:1, useCORS:true });
+}
+function downloadBlob(blob, filename){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+async function copyCanvasToClipboard(canvas){
+  if(!navigator.clipboard || !window.ClipboardItem) throw new Error("Clipboard not supported");
+  const blob = await new Promise(res=>canvas.toBlob(res, 'image/png'));
+  if(!blob) throw new Error("PNG blob failed");
+  await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+}
+async function exportTableAsPNG(containerId, filename, tryClipboard=true){
+  if(containerId==='tableWrap'){ const {html}=buildMapping(); document.getElementById(containerId).innerHTML=html; }
+  else if(containerId==='ponTableWrap'){ const {html}=buildPONTable(); document.getElementById(containerId).innerHTML=html; }
+  const holder=document.getElementById(containerId);
+  const table = holder.querySelector('table');
+  if(!table){ alert("No table to export."); return; }
+  table.scrollIntoView({block:'nearest'});
+  const canvas = await tableToCanvas(table);
+  if(tryClipboard){
+    try{ await copyCanvasToClipboard(canvas); alert("PNG copied to clipboard ✅"); return; }catch(e){/* fallback to download */ }
   }
+  const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
+  if(!blob){ alert("Could not create PNG."); return; }
+  downloadBlob(blob, filename);
+}
+async function sharePNG(containerId, filename){
+  // Render up-to-date table
+  if(containerId==='tableWrap'){ const {html}=buildMapping(); document.getElementById(containerId).innerHTML=html; }
+  else if(containerId==='ponTableWrap'){ const {html}=buildPONTable(); document.getElementById(containerId).innerHTML=html; }
+  const holder=document.getElementById(containerId);
+  const table = holder.querySelector('table');
+  if(!table){ alert("No table to share."); return; }
+  const canvas = await tableToCanvas(table);
+  const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
+  if(!blob){ alert("Could not create PNG."); return; }
+  if(navigator.canShare && 'share' in navigator){
+    try{
+      const file = new File([blob], filename, {type:'image/png'});
+      await navigator.share({ files:[file], title:'Splice table', text:'Fiber splice mapping' });
+      return;
+    }catch(e){
+      // If user cancels or share fails, fall back to download
+    }
+  }
+  downloadBlob(blob, filename);
 }
 
 /* Modal (popup) fallback */
@@ -650,12 +736,15 @@ function attach(){
   document.getElementById("mSelATo").addEventListener("change", ()=>{ onChangeTo(true); refreshMultiUI(false); });
   document.getElementById("mToMinus").addEventListener("click", ()=> incTo(-1));
   document.getElementById("mToPlus").addEventListener("click", ()=> incTo(+1));
-  document.getElementById("mSelBStart").addEventListener("change", ()=>{ onChangeTo(false); refreshMultiUI(false); });
+  document.getElementById("mSelBStart").addEventListener("change", ()=>{ enforceBStartCap(); onChangeTo(false); refreshMultiUI(false); });
   document.getElementById("mBMinus").addEventListener("click", ()=> incBStart(-1));
   document.getElementById("mBPlus").addEventListener("click", ()=> incBStart(+1));
   document.getElementById("swapAB").addEventListener("change", ()=>{ buildMapping(); buildPONTable(); });
   document.getElementById("copyTable").addEventListener("click", ()=>{ const {html,tsv}=buildMapping(); copyMapping(html,tsv); });
   document.getElementById("copyFallback").addEventListener("click", ()=>{ const {html,tsv}=buildMapping(); openCopyPopup(html,tsv); });
+  document.getElementById("copyPng").addEventListener("click", ()=> exportTableAsPNG('tableWrap','splice-table.png',true));
+  document.getElementById("downloadPng").addEventListener("click", ()=> exportTableAsPNG('tableWrap','splice-table.png',false));
+  document.getElementById("sharePng").addEventListener("click", ()=> sharePNG('tableWrap','splice-table.png'));
 
   // PON
   document.getElementById("ponRatio").addEventListener("change", ()=>{ ponFillSelects(); ponOnChangeFrom(); });
@@ -663,19 +752,21 @@ function attach(){
   document.getElementById("ponTo").addEventListener("change", ponOnChangeTo);
   document.getElementById("ponToMinus").addEventListener("click", ()=> ponIncTo(-1));
   document.getElementById("ponToPlus").addEventListener("click", ()=> ponIncTo(+1));
-  document.getElementById("ponBStart").addEventListener("change", ()=>{ setPonBOverlay(); ponOnChangeTo(); buildPONTable(); });
+  document.getElementById("ponBStart").addEventListener("change", ()=>{ enforcePonBStartCap(); setPonBOverlay(); ponOnChangeTo(); buildPONTable(); });
   document.getElementById("ponBMinus").addEventListener("click", ()=> ponIncB(-1));
   document.getElementById("ponBPlus").addEventListener("click", ()=> ponIncB(+1));
-  document.getElementById("ponCopy").addEventListener("click", ()=>{ const {html,tsv}=buildPONTable(); copyMappingHTML(html,tsv); });
+  document.getElementById("ponCopy").addEventListener("click", ()=>{ const {html,tsv}=buildPONTable(); copyMapping(html,tsv); });
   document.getElementById("ponCopyFallback").addEventListener("click", ()=>{ const {html,tsv}=buildPONTable(); openCopyPopup(html,tsv); });
+  document.getElementById("ponCopyPng").addEventListener("click", ()=> exportTableAsPNG('ponTableWrap','pon-table.png',true));
+  document.getElementById("ponDownloadPng").addEventListener("click", ()=> exportTableAsPNG('ponTableWrap','pon-table.png',false));
+  document.getElementById("ponSharePng").addEventListener("click", ()=> sharePNG('ponTableWrap','pon-table.png'));
 
-  // Modal buttons
+  // Modal
   document.getElementById("btnCloseModal").addEventListener("click", closeCopyPopup);
   document.getElementById("btnSelectTable").addEventListener("click", selectPopupTable);
   document.getElementById("btnCopyTSV").addEventListener("click", ()=>{
     const tsv=document.getElementById("popupTSV");
     tsv.focus(); tsv.select();
-    // try clipboard too (best effort)
     if(navigator.clipboard){ navigator.clipboard.writeText(tsv.value).catch(()=>{}); }
   });
 
