@@ -1,14 +1,16 @@
 <!doctype html>
-<html lang="no">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fiber Splice Planner – Enkel</title>
+<!-- Force desktop-style layout, even on mobile -->
+<meta name="viewport" content="width=1200, initial-scale=1">
+<title>Fiber Splice Planner – Simple</title>
 <style>
   :root{ --bg:#F4EFEA; --card:#FAF7F2; --text:#1a1a1a; --muted:#6b7280; --border:#e6dfd6; --shadow:0 2px 10px rgba(70,50,30,.08); --warn:#EAB308; --warnText:#1a1a1a; }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-  .wrap{max-width:1100px;margin:0 auto;padding:12px 12px 32px}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; overflow-x:auto}
+  .wrap{width:1100px; min-width:1100px; margin:0 auto; padding:12px 12px 32px}
+
   .grid-two{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-bottom:12px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:var(--shadow)}
   h2{margin:6px 0 6px;font-size:16px}
@@ -17,13 +19,16 @@
   option{text-align:center}
   .name-row{position:relative;display:flex;align-items:center;justify-content:center;width:100%}
   .name-row button{position:absolute;right:0;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);cursor:pointer}
+
   .tube{margin-top:8px;font-size:12px;color:var(--muted)}
+
   .header{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
   .mode-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .mode-select{width:auto;min-width:180px;height:40px;font-weight:700}
   .toggle{display:flex;align-items:center;gap:8px}
   .hamb{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);cursor:pointer}
   .hamb span{display:block;width:18px;height:2px;background:#444;margin:2px 0}
+
   .splice-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;box-shadow:var(--shadow);margin-top:8px}
   .splice-row{display:grid;grid-template-columns:1fr 80px 1fr;gap:8px;align-items:center;justify-items:center}
   .badge-wrap{display:grid;grid-template-rows:auto 1fr auto;gap:6px;align-items:center;justify-items:center}
@@ -38,8 +43,9 @@
   .master-wrap{display:grid;grid-template-rows:auto auto auto;gap:8px;align-items:center;justify-items:center}
   .connector{width:60px;height:24px;margin-top:8px;margin-bottom:8px}
   .hidden{display:none}
-  .multi-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;box-shadow:var(--shadow);margin-top:8px}
-  .multi-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+  .multi-card,.pon-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;box-shadow:var(--shadow);margin-top:8px}
+  .multi-grid,.pon-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .subcard{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px}
   .small{font-size:12px;color:var(--muted)}
   .cs-compact{width:140px;height:50px}
@@ -47,10 +53,18 @@
   .inline-row{display:flex;align-items:center;gap:8px}
   .chip-info{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);padding:6px 10px;border-radius:999px;margin-top:8px}
   .chip-warn{display:inline-flex;align-items:center;gap:8px;background:var(--warn);color:var(--warnText);padding:6px 10px;border-radius:999px;margin-left:8px;font-weight:700}
+
   table{width:100%;border-collapse:collapse;margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}
   thead th{background:#f0ece6;font-weight:700;padding:10px;border-bottom:1px solid var(--border);font-size:15px;text-align:center}
   tbody td{padding:10px;border-bottom:1px solid var(--border);font-size:14px;text-align:center;vertical-align:middle}
   tbody tr:last-child td{border-bottom:none}
+
+  /* Modal for copy fallback */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9999}
+  .modal{background:#fff;border-radius:16px;max-width:900px;max-height:80vh;overflow:auto;border:1px solid var(--border);box-shadow:var(--shadow);padding:16px}
+  .modal h3{margin:0 0 10px 0}
+  .modal-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;padding:2px 6px}
 </style>
 </head>
 <body>
@@ -58,24 +72,24 @@
 
     <!-- MAIN GRID -->
     <div id="mainGrid" class="grid-two">
-      <div class="card">
+      <div class="card" id="cardA">
         <h2>Kabel A</h2>
-        <label>Kabelnavn (valgfritt)</label>
-        <div class="name-row"><input id="nameA" type="text" placeholder="f.eks. Stam 1"><button id="resetNameA" title="Tøm">↻</button></div>
-        <label>Kabelstørrelse</label>
+        <label>Custom name (optional)</label>
+        <div class="name-row"><input id="nameA" type="text" placeholder="e.g., Trunk A"><button id="resetNameA" title="Clear">↻</button></div>
+        <label>Cable size</label>
         <select id="sizeA"><option value="4">G4</option><option value="12" selected>G12</option><option value="24">G24</option><option value="48">G48</option><option value="72">G72</option><option value="96">G96</option><option value="144">G144</option><option value="192">G192</option><option value="288">G288</option><option value="432">G432</option></select>
-        <label>Fargekode</label>
+        <label>Color code</label>
         <select id="schemeA"><option value="tia">TIA (OPGW/Telia)</option><option value="s12altibox">S12 – Altibox</option><option value="tn" selected>TN Standard</option></select>
         <div id="tubeA" class="tube">Tube: –</div>
       </div>
 
       <div class="card">
         <h2>Kabel B</h2>
-        <label>Kabelnavn (valgfritt)</label>
-        <div class="name-row"><input id="nameB" type="text" placeholder="f.eks. Stam 2"><button id="resetNameB" title="Tøm">↻</button></div>
-        <label>Kabelstørrelse</label>
+        <label>Custom name (optional)</label>
+        <div class="name-row"><input id="nameB" type="text" placeholder="e.g., Customer dist."><button id="resetNameB" title="Clear">↻</button></div>
+        <label>Cable size</label>
         <select id="sizeB"><option value="4">G4</option><option value="12" selected>G12</option><option value="24">G24</option><option value="48">G48</option><option value="72">G72</option><option value="96">G96</option><option value="144">G144</option><option value="192">G192</option><option value="288">G288</option><option value="432">G432</option></select>
-        <label>Fargekode</label>
+        <label>Color code</label>
         <select id="schemeB"><option value="tia">TIA (OPGW/Telia)</option><option value="s12altibox">S12 – Altibox</option><option value="tn" selected>TN Standard</option></select>
         <div id="tubeB" class="tube">Tube: –</div>
       </div>
@@ -84,11 +98,15 @@
     <!-- Header -->
     <div class="header">
       <div class="mode-row">
-        <span style="font-weight:800">Modus:</span>
-        <select id="modeSel" class="mode-select"><option value="single" selected>SINGLE-SPLICE</option><option value="multi">MULTI-SPLICE</option></select>
-        <label class="toggle"><input type="checkbox" id="swapAB"><span>Bytt A/B i tabell</span></label>
+        <span style="font-weight:800">Mode:</span>
+        <select id="modeSel" class="mode-select">
+          <option value="single" selected>SINGLE-SPLICE</option>
+          <option value="multi">MULTI-SPLICE</option>
+          <option value="pon">PON-SPLITTER</option>
+        </select>
+        <label class="toggle"><input type="checkbox" id="swapAB"><span>Swap A/B in table</span></label>
       </div>
-      <button id="toggleGrid" class="hamb" title="Skjul/vis valg"><div><span></span><span></span><span></span></div></button>
+      <button id="toggleGrid" class="hamb" title="Show/hide main grid"><div><span></span><span></span><span></span></div></button>
     </div>
 
     <!-- SINGLE -->
@@ -111,39 +129,42 @@
           </div><button class="arrow-btn" id="downB">▼</button>
         </div>
       </div>
-      <div class="small" style="text-align:center;margin-top:6px">Hurtigtaster: ▲/▼ = begge • Shift+▲/▼ = A • Ctrl+▲/▼ = B</div>
+      <div class="small" style="text-align:center;margin-top:6px">Shortcuts: ▲/▼ = both • Shift+▲/▼ = A • Ctrl+▲/▼ = B</div>
     </div>
 
     <!-- MULTI -->
     <div id="multiWrap" class="multi-card hidden">
       <div class="multi-grid">
         <div class="subcard">
-          <div style="font-weight:700">Kabel A – intervall</div>
-          <div class="small">Velg Fra/Til (inkluderende)</div>
-          <label>Fra</label>
+          <div style="font-weight:700">Kabel A – range</div>
+          <div class="small">Choose From/To (inclusive)</div>
+          <label>From</label>
           <div class="color-select cs-compact"><div class="overlay" id="mOverlayAFrom"></div><span class="value-pill" id="mValueAFrom"></span><select id="mSelAFrom"></select></div>
-          <label>Til</label>
+          <label>To</label>
           <div class="inline-row">
-            <button id="mToMinus" class="btn" title="Kortere">−</button>
+            <button id="mToMinus" class="btn" title="Shorter">−</button>
             <div class="color-select cs-compact"><div class="overlay" id="mOverlayATo"></div><span class="value-pill" id="mValueATo"></span><select id="mSelATo"></select></div>
-            <button id="mToPlus" class="btn" title="Lengre">+</button>
+            <button id="mToPlus" class="btn" title="Longer">+</button>
           </div>
           <div class="small" id="lenInfo"></div>
         </div>
         <div class="subcard">
           <div style="font-weight:700">Kabel B – start</div>
-          <div class="small">Serien mappes fra dette nummeret</div>
+          <div class="small">Series maps from this number</div>
           <label>Start</label>
           <div class="inline-row">
-            <button id="mBMinus" class="btn" title="Start tidligere">−</button>
+            <button id="mBMinus" class="btn" title="Earlier">−</button>
             <div class="color-select cs-compact"><div class="overlay" id="mOverlayBStart"></div><span class="value-pill" id="mValueBStart"></span><select id="mSelBStart"></select></div>
-            <button id="mBPlus" class="btn" title="Start senere">+</button>
+            <button id="mBPlus" class="btn" title="Later">+</button>
           </div>
-          <button id="copyTable" class="btn" title="Kopier som HTML + TSV">Kopier tabell</button>
+          <div class="inline-row" style="gap:10px;margin-top:6px">
+            <button id="copyTable" class="btn" title="Copy as HTML + TSV">Copy table</button>
+            <button id="copyFallback" class="btn" title="Open copy popup">Open copy popup</button>
+          </div>
           <div id="multiNote" class="small"></div>
           <div id="rowInfo" class="chip-info">
-            <span id="rowCount">Rader: –</span>
-            <span id="rowWarn" class="chip-warn" style="display:none">Avkortet</span>
+            <span id="rowCount">Rows: –</span>
+            <span id="rowWarn" class="chip-warn" style="display:none">Truncated</span>
             <span id="limitInfo" class="chip-warn" style="display:none"></span>
           </div>
         </div>
@@ -151,10 +172,104 @@
       <div id="tableWrap"></div>
     </div>
 
+    <!-- PON-SPLITTER -->
+    <div id="ponWrap" class="pon-card hidden">
+      <div class="pon-grid">
+        <!-- Splitter left -->
+        <div class="subcard">
+          <div style="font-weight:700">PON splitter</div>
+          <div class="small">Choose ratio and outputs (inclusive)</div>
+
+          <label>Ratio</label>
+          <select id="ponRatio" style="width:auto;min-width:140px">
+            <option value="2">1:2</option>
+            <option value="8" selected>1:8</option>
+            <option value="16">1:16</option>
+            <option value="32">1:32</option>
+            <option value="64">1:64</option>
+          </select>
+
+          <label>From output</label>
+          <div class="color-select cs-compact">
+            <div class="overlay" id="ponOvFrom"></div>
+            <span class="value-pill" id="ponValFrom"></span>
+            <select id="ponFrom"></select>
+          </div>
+
+          <label>To output</label>
+          <div class="inline-row">
+            <button id="ponToMinus" class="btn" title="Shorter">−</button>
+            <div class="color-select cs-compact">
+              <div class="overlay" id="ponOvTo"></div>
+              <span class="value-pill" id="ponValTo"></span>
+              <select id="ponTo"></select>
+            </div>
+            <button id="ponToPlus" class="btn" title="Longer">+</button>
+          </div>
+
+          <div class="small" id="ponLenInfo"></div>
+          <div class="small">Bands = groups of 8 outputs</div>
+        </div>
+
+        <!-- B start right -->
+        <div class="subcard">
+          <div style="font-weight:700">Kabel B – start</div>
+          <div class="small">Maps against selected B cable</div>
+
+          <label>Start fiber</label>
+          <div class="inline-row">
+            <button id="ponBMinus" class="btn" title="Earlier">−</button>
+            <div class="color-select cs-compact">
+              <div class="overlay" id="ponOvB"></div>
+              <span class="value-pill" id="ponValB"></span>
+              <select id="ponBStart"></select>
+            </div>
+            <button id="ponBPlus" class="btn" title="Later">+</button>
+          </div>
+
+          <div class="inline-row" style="gap:10px;margin-top:6px">
+            <button id="ponCopy" class="btn" title="Copy as HTML + TSV">Copy table</button>
+            <button id="ponCopyFallback" class="btn" title="Open copy popup">Open copy popup</button>
+          </div>
+
+          <div id="ponNote" class="small"></div>
+          <div class="chip-info">
+            <span id="ponRowCount">Rows: –</span>
+            <span id="ponWarn" class="chip-warn" style="display:none">Truncated</span>
+            <span id="ponLimit" class="chip-warn" style="display:none"></span>
+          </div>
+
+          <div class="small" style="margin-top:6px;color:#555">Note: PON mode uses only **Kabel B** from the main grid.</div>
+        </div>
+      </div>
+
+      <div id="ponTableWrap"></div>
+    </div>
+
+  </div>
+
+  <!-- Modal: copy fallback -->
+  <div id="copyModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="copyTitle">
+      <h3 id="copyTitle">Copy popup (fallback)</h3>
+      <div class="modal-controls">
+        <button id="btnSelectTable" class="btn" title="Select table in popup">Select table</button>
+        <button id="btnCopyTSV" class="btn" title="Copy plain TSV (works everywhere)">Copy TSV</button>
+        <button id="btnCloseModal" class="btn" title="Close">Close</button>
+      </div>
+      <div class="small" style="margin-bottom:8px">
+        If clipboard is blocked on mobile/in-app browsers, tap <span class="kbd">Select table</span>, then long-press and choose <b>Copy</b>.  
+        In Teams, pasting selected HTML will keep the table formatting.
+      </div>
+      <div id="popupTableHolder"></div>
+      <hr style="margin:14px 0;border:none;border-top:1px solid #eee">
+      <div class="small" style="margin-bottom:6px">Plain TSV (fallback):</div>
+      <textarea id="popupTSV" style="width:100%;height:120px;font-family:ui-monospace,Consolas,Menlo,monospace"></textarea>
+    </div>
   </div>
 
 <script>
-/* === Fargekoder === */
+/* === Color schemes === */
 const SCHEMES = {
   "tia": ["Blå","#0072CE","Oransje","#FF6A00","Grønn","#2CA02C","Brun","#8B4513","Skifer","#708090","Hvit","#FFFFFF","Rød","#E41A1C","Svart","#111111","Gul","#FFD700","Fiolett","#7B1FA2","Rosa","#FF69B4","Aqua","#00B7C3"],
   "s12altibox": ["Rød","#E41A1C","Blå","#0072CE","Hvit","#FFFFFF","Grønn","#2CA02C","Gul","#FFD700","Grå","#708090","Brun","#8B4513","Svart","#111111","Fiolett","#7B1FA2","Oransje","#FF6A00","Turkis","#00B7C3","Rosa","#FF69B4"],
@@ -165,34 +280,30 @@ const TUBE_SCHEMES = {
   "s12altibox": ["Rød","#E41A1C","Blå","#0072CE","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF"],
   "tia": [...SCHEMES.tia]
 };
+/* TIA 8 for PON outputs */
+const TIA8 = ["Blå","#0072CE","Oransje","#FF6A00","Grønn","#2CA02C","Brun","#8B4513","Skifer","#708090","Hvit","#FFFFFF","Rød","#E41A1C","Svart","#111111"];
 
 /* Helpers */
 function colorForIndex(list, idx){ const i=(idx*2)%list.length; return {name:list[i], hex:list[i+1]}; }
 function pickTextColor(hex){ const h=hex.replace("#",""); const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16); const L=(0.2126*r+0.7152*g+0.0722*b)/255; return L>0.6?"#111":"#fff"; }
 
-/* PNG-chip (Teams-vennlig): returnerer data:URL */
+/* PNG fiber chip for Teams */
 function chipPNG(number, hex){
   const scale=2; const w=56*scale, h=22*scale, r=11*scale;
   const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d');
-  // bakgrunn
   ctx.fillStyle=hex; ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1*scale;
-  // rund rekt
   const rr=(x,y,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-  rr(0.5*scale,0.5*scale,w-1*scale,h-1*scale,r);
-  ctx.fill(); ctx.stroke();
-  // tekst
-  ctx.fillStyle=pickTextColor(hex);
-  ctx.font=`${10*scale}px "Segoe UI", Arial, sans-serif`;
-  ctx.textAlign='center'; ctx.textBaseline='middle';
+  rr(0.5*scale,0.5*scale,w-1*scale,h-1*scale,r); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=pickTextColor(hex); ctx.font=`${10*scale}px "Segoe UI", Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(String(number), w/2, h/2+0.5*scale);
   return c.toDataURL('image/png');
 }
 
-/* State */
+/* Common state */
 function getSize(p){ return parseInt(document.getElementById("size"+p).value,10); }
 function getScheme(p){ return document.getElementById("scheme"+p).value; }
 
-/* SINGLE */
+/* -------- SINGLE -------- */
 function getFiberIndex(p){ return Math.max(0, parseInt(document.getElementById("fiberSel"+p).value||"1",10)-1); }
 function setFiberIndex(p, idx){ const size=getSize(p); const c=Math.min(Math.max(idx,0), size-1); document.getElementById("fiberSel"+p).value=String(c+1); }
 function fillFiberSelect(p){ const size=getSize(p), sel=document.getElementById("fiberSel"+p), prev=Math.max(0, parseInt(sel.value||"1",10)-1); sel.innerHTML=""; for(let i=1;i<=size;i++){ const o=document.createElement("option"); o.value=String(i); o.textContent=String(i); sel.appendChild(o); } setFiberIndex(p, Math.min(prev,size-1)); }
@@ -210,20 +321,20 @@ function updateTubeLine(p, tubeNum, sch){ const tArr=TUBE_SCHEMES[sch], tCol=col
 function jump(p, d){ const size=getSize(p), idx=getFiberIndex(p), n=idx+d; if(n<0||n>size-1) return; setFiberIndex(p,n); updateBadge(p); }
 function jumpBoth(d){ const sa=getSize("A"), sb=getSize("B"), ia=getFiberIndex("A"), ib=getFiberIndex("B"); const na=ia+d, nb=ib+d; const okA=na>=0&&na<=sa-1, okB=nb>=0&&nb<=sb-1; if(!okA&&!okB) return; if(okA) setFiberIndex("A",na); if(okB) setFiberIndex("B",nb); updateBadge("A"); updateBadge("B"); }
 
-/* MULTI (logikk som før, inkl. caps/varsler) */
+/* -------- MULTI -------- */
 let multiSpanLen = 2;
 function fillRangeSelect(id, size){ const sel=document.getElementById(id), prev=parseInt(sel.value||"1",10)-1; sel.innerHTML=""; for(let i=1;i<=size;i++){ const o=document.createElement("option"); o.value=String(i); o.textContent=String(i); sel.appendChild(o);} sel.value=String(Math.min(Math.max(prev,0),size-1)+1);}
 function getSelNum(id){ return Math.max(1, parseInt(document.getElementById(id).value||"1",10)); }
 function setRangeOverlayAndPill(posId, overlayId, pillId, schemeKey){ const idx=getSelNum(posId)-1, col=colorForIndex(SCHEMES[schemeKey], idx%12); document.getElementById(overlayId).style.background=col.hex; document.getElementById(pillId).textContent=String(idx+1); document.getElementById(posId).title=col.name; }
 function maxToNoTrunc(fromA,sizeA,startB,sizeB){ const maxLenB=Math.max(0,sizeB-startB+1); const limitByB=fromA+maxLenB-1; return Math.min(sizeA, limitByB); }
-function showLimit(reason){ const el=document.getElementById("limitInfo"); if(!reason){ el.style.display="none"; el.textContent=""; return; } el.style.display="inline-flex"; el.textContent=(reason==="B")?"Begrenset av Kabel B":"Begrenset av Kabel A"; }
+function showLimit(reason){ const el=document.getElementById("limitInfo"); if(!reason){ el.style.display="none"; el.textContent=""; return; } el.style.display="inline-flex"; el.textContent=(reason==="B")?"Limited by Kabel B":"Limited by Kabel A"; }
 function onChangeFrom(){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); let desired=Math.max(multiSpanLen,2); let to=from+desired-1; const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } if(to<from+1) to=Math.min(cap,from+1); document.getElementById("mSelATo").value=String(to); multiSpanLen=to-from+1; updateLenInfo(); }
 function onChangeTo(adjustLen=true){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); let to=getSelNum("mSelATo"); if(to<from+1) to=from+1; if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } document.getElementById("mSelATo").value=String(to); if(adjustLen) multiSpanLen=to-from+1; updateLenInfo(); }
 function incTo(d){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); let to=getSelNum("mSelATo")+d; if(to<from+1) to=from+1; if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } document.getElementById("mSelATo").value=String(to); multiSpanLen=to-from+1; refreshMultiUI(false); }
 function incBStart(d){ const sizeB=getSize("B"); let start=getSelNum("mSelBStart")+d; if(start<1) start=1; if(start>sizeB) start=sizeB; document.getElementById("mSelBStart").value=String(start); onChangeTo(false); refreshMultiUI(false); }
-function updateLenInfo(){ const from=getSelNum("mSelAFrom"), to=getSelNum("mSelATo"); const len=to-from+1; document.getElementById("lenInfo").textContent=`Lengde: ${len} fiber`; }
+function updateLenInfo(){ const from=getSelNum("mSelAFrom"), to=getSelNum("mSelATo"); const len=to-from+1; document.getElementById("lenInfo").textContent=`Length: ${len} fibers`; }
 
-/* TABELL med IMG data:URL-chips (Teams OK) */
+/* Build A/B table (PNG chips) */
 function buildMapping(){
   const swap=document.getElementById("swapAB").checked;
   const sizeA=getSize("A"), sizeB=getSize("B"), schA=getScheme("A"), schB=getScheme("B");
@@ -246,19 +357,15 @@ function buildMapping(){
       <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h5}</th>
     </tr></thead><tbody>`;
 
-  let tsv = swap
-    ? `B_tube\tB_fiber\tB_farge\t<->\tA_fiber\tA_farge\tA_tube\n`
-    : `A_tube\tA_fiber\tA_farge\t<->\tB_fiber\tB_farge\tB_tube\n`;
+  let tsv = swap ? `B_tube\tB_fiber\tB_color\t<->\tA_fiber\tA_color\tA_tube\n`
+                  : `A_tube\tA_fiber\tA_color\t<->\tB_fiber\tB_color\tB_tube\n`;
 
   for(let i=0;i<rows;i++){
     const fA=fromA+i, fB=startB+i;
     const tubeA=Math.floor((fA-1)/12)+1, tubeB=Math.floor((fB-1)/12)+1;
     const colA=colorForIndex(SCHEMES[schA], (fA-1)%12), colB=colorForIndex(SCHEMES[schB], (fB-1)%12);
-
     const chipA = `<img src="${chipPNG(fA, colA.hex)}" width="56" height="22" alt="${fA}">`;
     const chipB = `<img src="${chipPNG(fB, colB.hex)}" width="56" height="22" alt="${fB}">`;
-
-    // mini-tabell for stabil sentrering
     const cellA = `<table style="border-collapse:collapse;margin:auto"><tr><td style="border:none;text-align:center">${chipA}</td></tr><tr><td style="border:none;text-align:center">${colA.name}</td></tr></table>`;
     const cellB = `<table style="border-collapse:collapse;margin:auto"><tr><td style="border:none;text-align:center">${chipB}</td></tr><tr><td style="border:none;text-align:center">${colB.name}</td></tr></table>`;
 
@@ -273,45 +380,250 @@ function buildMapping(){
       <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c5}</td>
     </tr>`;
 
-    tsv += swap
-      ? `${tubeB}\t${fB}\t${colB.name}\t<->\t${fA}\t${colA.name}\t${tubeA}\n`
-      : `${tubeA}\t${fA}\t${colA.name}\t<->\t${fB}\t${colB.name}\t${tubeB}\n`;
+    tsv += swap ? `${tubeB}\t${fB}\t${colB.name}\t<->\t${fA}\t${colA.name}\t${tubeA}\n`
+                : `${tubeA}\t${fA}\t${colA.name}\t<->\t${fB}\t${colB.name}\t${tubeB}\n`;
   }
   html += `</tbody></table>`;
 
-  document.getElementById("rowCount").textContent=`Rader: ${rows}`;
+  document.getElementById("rowCount").textContent=`Rows: ${rows}`;
   const warn=(rows<lenA);
   document.getElementById("rowWarn").style.display = warn ? "inline-flex" : "none";
-  document.getElementById("multiNote").textContent = warn ? `Avkortet: Kabel B har kun ${sizeB-startB+1} ledige fra start #${startB}.` : "";
+  document.getElementById("multiNote").textContent = warn ? `Truncated: Kabel B only has ${sizeB-startB+1} available from #${startB}.` : "";
 
   document.getElementById("tableWrap").innerHTML = html;
   return {html, tsv};
 }
 
-/* Copy */
+/* Copy (with popup fallback) */
 async function copyMapping(html, tsv){
   try{
     if(navigator.clipboard && window.ClipboardItem){
       const blobHtml=new Blob([html],{type:"text/html"});
       const blobText=new Blob([tsv],{type:"text/plain"});
       await navigator.clipboard.write([new ClipboardItem({"text/html":blobHtml,"text/plain":blobText})]);
-      alert("Tabell kopiert (HTML + tekst). Lim inn i Teams.");
-    }else{ await navigator.clipboard.writeText(tsv); alert("Tabell kopiert som tekst (TSV)."); }
-  }catch(e){ console.error(e); alert("Kunne ikke kopiere. Marker tabellen og kopier manuelt (Ctrl/Cmd+C)."); }
+      alert("Copied (HTML + text). Paste into Teams.");
+    }else{
+      throw new Error("ClipboardItem not supported");
+    }
+  }catch(e){
+    // Fallback popup
+    openCopyPopup(html, tsv);
+  }
 }
 
-/* Wire UI (uendret, bare bundet) */
+/* -------- PON-SPLITTER -------- */
+function ponOutCount(){ return parseInt(document.getElementById("ponRatio").value,10); }
+function ponFillSelects(){
+  const n=ponOutCount();
+  ["ponFrom","ponTo"].forEach(id=>{
+    const sel=document.getElementById(id); const prev=parseInt(sel.value||"1",10)-1;
+    sel.innerHTML=""; for(let i=1;i<=n;i++){ const o=document.createElement("option"); o.value=String(i); o.textContent=String(i); sel.appendChild(o); }
+    sel.value=String(Math.min(Math.max(prev,0), n-1)+1);
+  });
+}
+function setPonOverlayAndPill(selId, ovId, pillId){
+  const idx=parseInt(document.getElementById(selId).value,10)-1;
+  const col=colorForIndex(TIA8, idx%8);
+  document.getElementById(ovId).style.background=col.hex;
+  document.getElementById(pillId).textContent=String(idx+1);
+  document.getElementById(selId).title=col.name;
+}
+function ponCapTo(from, to){
+  const n=ponOutCount(); const sizeB=getSize("B"); const startB=parseInt(document.getElementById("ponBStart").value||"1",10);
+  const lenReq=Math.max(0,to-from+1), lenB=Math.max(0,sizeB-startB+1);
+  let cap = Math.min(n, from + lenB - 1);
+  if(cap < from) cap = from;
+  const reason = (cap === n) ? "Splitter" : ((lenB < lenReq) ? "Kabel B" : "");
+  return {cap, reason};
+}
+function showPonLimit(reason){
+  const el=document.getElementById("ponLimit");
+  if(!reason){ el.style.display="none"; el.textContent=""; return; }
+  el.style.display="inline-flex"; el.textContent = (reason==="Splitter") ? "Limited by Splitter" : "Limited by Kabel B";
+}
+function ponUpdateLen(){
+  const f=parseInt(document.getElementById("ponFrom").value,10);
+  const t=parseInt(document.getElementById("ponTo").value,10);
+  document.getElementById("ponLenInfo").textContent = `Length: ${t-f+1} outputs`;
+}
+function ponOnChangeFrom(){
+  const from=parseInt(document.getElementById("ponFrom").value,10);
+  let to=parseInt(document.getElementById("ponTo").value||String(from+1),10);
+  if(to<from) to=from;
+  const {cap,reason}=ponCapTo(from,to);
+  if(to>cap){ to=cap; showPonLimit(reason); } else { showPonLimit(""); }
+  document.getElementById("ponTo").value=String(to);
+  setPonOverlayAndPill("ponFrom","ponOvFrom","ponValFrom");
+  setPonOverlayAndPill("ponTo","ponOvTo","ponValTo");
+  ponUpdateLen(); buildPONTable();
+}
+function ponOnChangeTo(){
+  const from=parseInt(document.getElementById("ponFrom").value,10);
+  let to=parseInt(document.getElementById("ponTo").value,10);
+  if(to<from) to=from;
+  const {cap,reason}=ponCapTo(from,to);
+  if(to>cap){ to=cap; showPonLimit(reason); } else { showPonLimit(""); }
+  document.getElementById("ponTo").value=String(to);
+  setPonOverlayAndPill("ponTo","ponOvTo","ponValTo");
+  ponUpdateLen(); buildPONTable();
+}
+function ponIncTo(delta){
+  const from=parseInt(document.getElementById("ponFrom").value,10);
+  let to=parseInt(document.getElementById("ponTo").value,10)+delta;
+  if(to<from) to=from;
+  const {cap,reason}=ponCapTo(from,to);
+  if(to>cap){ to=cap; showPonLimit(reason); } else { showPonLimit(""); }
+  document.getElementById("ponTo").value=String(to);
+  setPonOverlayAndPill("ponTo","ponOvTo","ponValTo");
+  ponUpdateLen(); buildPONTable();
+}
+
+/* B start for PON */
+function ponFillBStart(){
+  const sizeB=getSize("B");
+  const sel=document.getElementById("ponBStart"); const prev=parseInt(sel.value||"1",10)-1;
+  sel.innerHTML=""; for(let i=1;i<=sizeB;i++){ const o=document.createElement("option"); o.value=String(i); o.textContent=String(i); sel.appendChild(o); }
+  sel.value=String(Math.min(Math.max(prev,0), sizeB-1)+1);
+  setPonBOverlay();
+}
+function setPonBOverlay(){
+  const start=parseInt(document.getElementById("ponBStart").value,10);
+  const sch=getScheme("B"); const col=colorForIndex(SCHEMES[sch], (start-1)%12);
+  document.getElementById("ponOvB").style.background=col.hex;
+  document.getElementById("ponValB").textContent=String(start);
+  document.getElementById("ponBStart").title=col.name;
+}
+function ponIncB(delta){
+  const sizeB=getSize("B"); let s=parseInt(document.getElementById("ponBStart").value,10)+delta;
+  if(s<1) s=1; if(s>sizeB) s=sizeB; document.getElementById("ponBStart").value=String(s);
+  setPonBOverlay(); ponOnChangeTo(); buildPONTable();
+}
+
+/* Build PON table: Band | Splitter (Output) | ⇆ | Kabel B | Tube B */
+function buildPONTable(){
+  const swap=document.getElementById("swapAB").checked; // here A=Splitter
+  const nameSplit=(document.getElementById("nameA").value||"Splitter").trim();
+  const nameB=(document.getElementById("nameB").value||"Kabel B").trim();
+
+  const n=ponOutCount(), from=parseInt(document.getElementById("ponFrom").value,10), to=parseInt(document.getElementById("ponTo").value,10);
+  const startB=parseInt(document.getElementById("ponBStart").value,10);
+  const sizeB=getSize("B"), schB=getScheme("B");
+
+  const lenSplit = Math.max(0,to-from+1);
+  const lenB = Math.max(0,sizeB-startB+1);
+  const rows = Math.max(0, Math.min(lenSplit, lenB));
+
+  let h1="Band", h2=nameSplit+" – Output", h3="⇆", h4=nameB, h5="Tube B";
+  if(swap){ h1="Tube B"; h2=nameB; h4=nameSplit+" – Output"; h5="Band"; }
+
+  let html=`<table style="border-collapse:collapse;width:100%;">
+    <thead><tr>
+      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h1}</th>
+      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h2}</th>
+      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h3}</th>
+      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h4}</th>
+      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h5}</th>
+    </tr></thead><tbody>`;
+
+  let tsv = swap
+    ? `B_tube\tB_fiber\tB_color\t<->\tSplitter_output\tSplit_color\tBand\n`
+    : `Band\tSplitter_output\tSplit_color\t<->\tB_fiber\tB_color\tB_tube\n`;
+
+  for(let i=0;i<rows;i++){
+    const output = from + i;
+    const band = Math.floor((output-1)/8)+1;
+    const colS = colorForIndex(TIA8, (output-1)%8);
+
+    const fB = startB + i;
+    const tubeB = Math.floor((fB-1)/12)+1;
+    const colB = colorForIndex(SCHEMES[schB], (fB-1)%12);
+
+    const chipS = `<img src="${chipPNG(output, colS.hex)}" width="56" height="22" alt="${output}">`;
+    const cellS = `<table style="border-collapse:collapse;margin:auto"><tr><td style="border:none;text-align:center">${chipS}</td></tr><tr><td style="border:none;text-align:center">${colS.name}</td></tr></table>`;
+
+    const chipB = `<img src="${chipPNG(fB, colB.hex)}" width="56" height="22" alt="${fB}">`;
+    const cellB = `<table style="border-collapse:collapse;margin:auto"><tr><td style="border:none;text-align:center">${chipB}</td></tr><tr><td style="border:none;text-align:center">${colB.name}</td></tr></table>`;
+
+    let c1=`#${band}`, c2=cellS, c3="⇆", c4=cellB, c5=`#${tubeB}`;
+    if(swap){ c1=`#${tubeB}`; c2=cellB; c4=cellS; c5=`#${band}`; }
+
+    html += `<tr>
+      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c1}</td>
+      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c2}</td>
+      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c3}</td>
+      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c4}</td>
+      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c5}</td>
+    </tr>`;
+
+    tsv += swap
+      ? `${tubeB}\t${fB}\t${colB.name}\t<->\t${output}\t${colS.name}\t${band}\n`
+      : `${band}\t${output}\t${colS.name}\t<->\t${fB}\t${colB.name}\t${tubeB}\n`;
+  }
+  html += `</tbody></table>`;
+
+  document.getElementById("ponRowCount").textContent = `Rows: ${rows}`;
+  const warn = (rows < lenSplit);
+  document.getElementById("ponWarn").style.display = warn ? "inline-flex" : "none";
+  document.getElementById("ponNote").textContent = warn ? `Truncated: splitter has only ${ponOutCount()} outputs or Kabel B ends at #${getSize("B")}.` : "";
+
+  document.getElementById("ponTableWrap").innerHTML = html;
+  return {html, tsv};
+}
+
+/* Copy for PON with fallback */
+async function copyMappingHTML(html, tsv){
+  try{
+    if(navigator.clipboard && window.ClipboardItem){
+      const blobHtml=new Blob([html],{type:"text/html"});
+      const blobText=new Blob([tsv],{type:"text/plain"});
+      await navigator.clipboard.write([new ClipboardItem({"text/html":blobHtml,"text/plain":blobText})]);
+      alert("Copied (HTML + text). Paste into Teams.");
+    }else{
+      throw new Error("ClipboardItem not supported");
+    }
+  }catch(e){
+    openCopyPopup(html, tsv);
+  }
+}
+
+/* Modal (popup) fallback */
+function openCopyPopup(html, tsv){
+  const modal = document.getElementById("copyModal");
+  const holder = document.getElementById("popupTableHolder");
+  const tsvBox = document.getElementById("popupTSV");
+  holder.innerHTML = html;
+  tsvBox.value = tsv;
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+}
+function closeCopyPopup(){
+  const modal = document.getElementById("copyModal");
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden", "true");
+}
+function selectPopupTable(){
+  const holder = document.getElementById("popupTableHolder");
+  const table = holder.querySelector("table");
+  if(!table) return;
+  const range = document.createRange();
+  range.selectNode(table);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+/* Wire UI */
 function attach(){
   ["A","B"].forEach(p=>{
     document.getElementById("size"+p).addEventListener("change", ()=>{ 
       fillFiberSelect(p); updateBadge(p);
       if(p==="A"){ fillRangeSelect("mSelAFrom", getSize("A")); fillRangeSelect("mSelATo", getSize("A")); onChangeFrom(); }
-      if(p==="B"){ fillRangeSelect("mSelBStart", getSize("B")); }
-      refreshMultiUI(false);
+      if(p==="B"){ fillRangeSelect("mSelBStart", getSize("B")); ponFillBStart(); }
+      refreshMultiUI(false); buildPONTable();
     });
-    document.getElementById("scheme"+p).addEventListener("change", ()=>{ updateBadge(p); refreshMultiUI(false); });
-    document.getElementById("name"+p).addEventListener("input", ()=>{ updateBadge(p); refreshMultiUI(false); });
-    document.getElementById("resetName"+p).addEventListener("click", ()=>{ document.getElementById("name"+p).value=""; updateBadge(p); refreshMultiUI(false); });
+    document.getElementById("scheme"+p).addEventListener("change", ()=>{ updateBadge(p); refreshMultiUI(false); buildPONTable(); });
+    document.getElementById("name"+p).addEventListener("input", ()=>{ updateBadge(p); });
+    document.getElementById("resetName"+p).addEventListener("click", ()=>{ document.getElementById("name"+p).value=""; updateBadge(p); });
     document.getElementById("fiberSel"+p).addEventListener("change", ()=> updateBadge(p));
   });
   document.getElementById("upA").addEventListener("click", ()=> jump("A",-1));
@@ -324,10 +636,13 @@ function attach(){
   document.getElementById("toggleGrid").addEventListener("click", ()=>{ document.getElementById("mainGrid").classList.toggle("hidden"); });
 
   document.getElementById("modeSel").addEventListener("change", ()=>{
-    const mode=document.getElementById("modeSel").value;
-    document.getElementById("singleWrap").classList.toggle("hidden", mode!=="single");
-    document.getElementById("multiWrap").classList.toggle("hidden", mode!=="multi");
-    if(mode==="multi"){ refreshMultiUI(false); }
+    const m=document.getElementById("modeSel").value;
+    document.getElementById("singleWrap").classList.toggle("hidden", m!=="single");
+    document.getElementById("multiWrap").classList.toggle("hidden", m!=="multi");
+    document.getElementById("ponWrap").classList.toggle("hidden", m!=="pon");
+    document.getElementById("cardA").style.display = (m==="pon") ? "none" : "flex";
+    if(m==="multi"){ refreshMultiUI(false); }
+    if(m==="pon"){ ponFillSelects(); ponFillBStart(); ponOnChangeFrom(); buildPONTable(); }
   });
 
   // Multi
@@ -335,15 +650,36 @@ function attach(){
   document.getElementById("mSelATo").addEventListener("change", ()=>{ onChangeTo(true); refreshMultiUI(false); });
   document.getElementById("mToMinus").addEventListener("click", ()=> incTo(-1));
   document.getElementById("mToPlus").addEventListener("click", ()=> incTo(+1));
-
   document.getElementById("mSelBStart").addEventListener("change", ()=>{ onChangeTo(false); refreshMultiUI(false); });
   document.getElementById("mBMinus").addEventListener("click", ()=> incBStart(-1));
   document.getElementById("mBPlus").addEventListener("click", ()=> incBStart(+1));
-
-  document.getElementById("swapAB").addEventListener("change", ()=> buildMapping());
+  document.getElementById("swapAB").addEventListener("change", ()=>{ buildMapping(); buildPONTable(); });
   document.getElementById("copyTable").addEventListener("click", ()=>{ const {html,tsv}=buildMapping(); copyMapping(html,tsv); });
+  document.getElementById("copyFallback").addEventListener("click", ()=>{ const {html,tsv}=buildMapping(); openCopyPopup(html,tsv); });
 
-  // Tastatur (single)
+  // PON
+  document.getElementById("ponRatio").addEventListener("change", ()=>{ ponFillSelects(); ponOnChangeFrom(); });
+  document.getElementById("ponFrom").addEventListener("change", ponOnChangeFrom);
+  document.getElementById("ponTo").addEventListener("change", ponOnChangeTo);
+  document.getElementById("ponToMinus").addEventListener("click", ()=> ponIncTo(-1));
+  document.getElementById("ponToPlus").addEventListener("click", ()=> ponIncTo(+1));
+  document.getElementById("ponBStart").addEventListener("change", ()=>{ setPonBOverlay(); ponOnChangeTo(); buildPONTable(); });
+  document.getElementById("ponBMinus").addEventListener("click", ()=> ponIncB(-1));
+  document.getElementById("ponBPlus").addEventListener("click", ()=> ponIncB(+1));
+  document.getElementById("ponCopy").addEventListener("click", ()=>{ const {html,tsv}=buildPONTable(); copyMappingHTML(html,tsv); });
+  document.getElementById("ponCopyFallback").addEventListener("click", ()=>{ const {html,tsv}=buildPONTable(); openCopyPopup(html,tsv); });
+
+  // Modal buttons
+  document.getElementById("btnCloseModal").addEventListener("click", closeCopyPopup);
+  document.getElementById("btnSelectTable").addEventListener("click", selectPopupTable);
+  document.getElementById("btnCopyTSV").addEventListener("click", ()=>{
+    const tsv=document.getElementById("popupTSV");
+    tsv.focus(); tsv.select();
+    // try clipboard too (best effort)
+    if(navigator.clipboard){ navigator.clipboard.writeText(tsv.value).catch(()=>{}); }
+  });
+
+  // Keyboard (single)
   document.addEventListener("keydown", (e)=>{
     if(e.key==="ArrowUp" || e.key==="ArrowDown"){
       const delta=e.key==="ArrowUp"?-1:+1;
@@ -357,6 +693,7 @@ function attach(){
   });
 }
 
+/* Refresh helpers */
 function refreshMultiUI(rebuild=true){
   const sizeA=getSize("A"), sizeB=getSize("B");
   if(rebuild){ fillRangeSelect("mSelAFrom", sizeA); fillRangeSelect("mSelATo", sizeA); fillRangeSelect("mSelBStart", sizeB); }
@@ -369,10 +706,18 @@ function refreshMultiUI(rebuild=true){
 }
 
 function init(){
+  // Single init
   fillFiberSelect("A"); fillFiberSelect("B");
-  setFiberIndex("A",0); setFiberIndex("B",0);
+  document.getElementById("fiberSelA").value="1";
+  document.getElementById("fiberSelB").value="1";
   updateBadge("A"); updateBadge("B");
+
+  // Multi init
   refreshMultiUI();
+
+  // PON init
+  ponFillSelects(); ponFillBStart(); ponOnChangeFrom(); buildPONTable();
+
   attach();
 }
 document.addEventListener("DOMContentLoaded", init);
