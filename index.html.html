@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiber Splice Planner – Enkel</title>
+<style>
+  :root{ --bg:#F4EFEA; --card:#FAF7F2; --text:#1a1a1a; --muted:#6b7280; --border:#e6dfd6; --shadow:0 2px 10px rgba(70,50,30,.08); --warn:#EAB308; --warnText:#1a1a1a; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  .wrap{max-width:1100px;margin:0 auto;padding:12px 12px 32px}
+  .grid-two{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-bottom:12px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:var(--shadow)}
+  h2{margin:6px 0 6px;font-size:16px}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
+  input, select{width:100%;max-width:260px;height:44px;padding:8px 10px;border:1px solid #d1d5db;border-radius:10px;font-size:14px;background:#fff;text-align:center;text-align-last:center;appearance:none;-moz-appearance:none;-webkit-appearance:none}
+  option{text-align:center}
+  .name-row{position:relative;display:flex;align-items:center;justify-content:center;width:100%}
+  .name-row button{position:absolute;right:0;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);cursor:pointer}
+  .tube{margin-top:8px;font-size:12px;color:var(--muted)}
+  .header{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
+  .mode-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .mode-select{width:auto;min-width:180px;height:40px;font-weight:700}
+  .toggle{display:flex;align-items:center;gap:8px}
+  .hamb{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);cursor:pointer}
+  .hamb span{display:block;width:18px;height:2px;background:#444;margin:2px 0}
+  .splice-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;box-shadow:var(--shadow);margin-top:8px}
+  .splice-row{display:grid;grid-template-columns:1fr 80px 1fr;gap:8px;align-items:center;justify-items:center}
+  .badge-wrap{display:grid;grid-template-rows:auto 1fr auto;gap:6px;align-items:center;justify-items:center}
+  .arrow-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);cursor:pointer;font-size:18px;line-height:1}
+  .badge{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;min-height:140px;padding:12px 16px;border-radius:14px;border:1px solid var(--border);width:100%;max-width:360px;background:#fff;box-shadow:var(--shadow)}
+  .badge .title{font-weight:800}
+  .color-select{position:relative;width:160px;height:56px}
+  .color-select .overlay{position:absolute;inset:0;border-radius:12px;border:1px solid #d1d5db;background:#fff;pointer-events:none}
+  .color-select select{position:relative;z-index:2;width:100%;height:100%;padding:6px 8px;border-radius:12px;border:1px solid #d1d5db;font-size:16px;background:transparent;color:transparent}
+  .color-select select:focus,.color-select select:active{color:#111}
+  .color-select .value-pill{position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border:1px solid #d1d5db;border-radius:999px;padding:4px 12px;font-weight:700;font-size:18px;pointer-events:none}
+  .master-wrap{display:grid;grid-template-rows:auto auto auto;gap:8px;align-items:center;justify-items:center}
+  .connector{width:60px;height:24px;margin-top:8px;margin-bottom:8px}
+  .hidden{display:none}
+  .multi-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;box-shadow:var(--shadow);margin-top:8px}
+  .multi-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .subcard{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .small{font-size:12px;color:var(--muted)}
+  .cs-compact{width:140px;height:50px}
+  .btn{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;box-shadow:var(--shadow)}
+  .inline-row{display:flex;align-items:center;gap:8px}
+  .chip-info{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);padding:6px 10px;border-radius:999px;margin-top:8px}
+  .chip-warn{display:inline-flex;align-items:center;gap:8px;background:var(--warn);color:var(--warnText);padding:6px 10px;border-radius:999px;margin-left:8px;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  thead th{background:#f0ece6;font-weight:700;padding:10px;border-bottom:1px solid var(--border);font-size:15px;text-align:center}
+  tbody td{padding:10px;border-bottom:1px solid var(--border);font-size:14px;text-align:center;vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- MAIN GRID -->
+    <div id="mainGrid" class="grid-two">
+      <div class="card">
+        <h2>Kabel A</h2>
+        <label>Kabelnavn (valgfritt)</label>
+        <div class="name-row"><input id="nameA" type="text" placeholder="f.eks. Stam 1"><button id="resetNameA" title="Tøm">↻</button></div>
+        <label>Kabelstørrelse</label>
+        <select id="sizeA"><option value="4">G4</option><option value="12" selected>G12</option><option value="24">G24</option><option value="48">G48</option><option value="72">G72</option><option value="96">G96</option><option value="144">G144</option><option value="192">G192</option><option value="288">G288</option><option value="432">G432</option></select>
+        <label>Fargekode</label>
+        <select id="schemeA"><option value="tia">TIA (OPGW/Telia)</option><option value="s12altibox">S12 – Altibox</option><option value="tn" selected>TN Standard</option></select>
+        <div id="tubeA" class="tube">Tube: –</div>
+      </div>
+
+      <div class="card">
+        <h2>Kabel B</h2>
+        <label>Kabelnavn (valgfritt)</label>
+        <div class="name-row"><input id="nameB" type="text" placeholder="f.eks. Stam 2"><button id="resetNameB" title="Tøm">↻</button></div>
+        <label>Kabelstørrelse</label>
+        <select id="sizeB"><option value="4">G4</option><option value="12" selected>G12</option><option value="24">G24</option><option value="48">G48</option><option value="72">G72</option><option value="96">G96</option><option value="144">G144</option><option value="192">G192</option><option value="288">G288</option><option value="432">G432</option></select>
+        <label>Fargekode</label>
+        <select id="schemeB"><option value="tia">TIA (OPGW/Telia)</option><option value="s12altibox">S12 – Altibox</option><option value="tn" selected>TN Standard</option></select>
+        <div id="tubeB" class="tube">Tube: –</div>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="mode-row">
+        <span style="font-weight:800">Modus:</span>
+        <select id="modeSel" class="mode-select"><option value="single" selected>SINGLE-SPLICE</option><option value="multi">MULTI-SPLICE</option></select>
+        <label class="toggle"><input type="checkbox" id="swapAB"><span>Bytt A/B i tabell</span></label>
+      </div>
+      <button id="toggleGrid" class="hamb" title="Skjul/vis valg"><div><span></span><span></span><span></span></div></button>
+    </div>
+
+    <!-- SINGLE -->
+    <div id="singleWrap" class="splice-card">
+      <div class="splice-row">
+        <div class="badge-wrap"><button class="arrow-btn" id="upA">▲</button>
+          <div class="badge" id="badgeA"><div class="title" id="badgeATitle">Kabel A</div>
+            <div class="color-select"><div class="overlay" id="overlayA"></div><span class="value-pill" id="valueA"></span><select id="fiberSelA"></select></div>
+            <div id="badgeATube">Tube: –</div>
+          </div><button class="arrow-btn" id="downA">▼</button>
+        </div>
+        <div class="master-wrap"><button class="arrow-btn" id="upBoth">▲</button>
+          <svg class="connector" viewBox="0 0 120 24" aria-hidden="true"><line x1="10" y1="12" x2="110" y2="12" stroke="#999" stroke-width="2" /><circle cx="10" cy="12" r="3" fill="#999"></circle><circle cx="110" cy="12" r="3" fill="#999"></circle></svg>
+          <button class="arrow-btn" id="downBoth">▼</button>
+        </div>
+        <div class="badge-wrap"><button class="arrow-btn" id="upB">▲</button>
+          <div class="badge" id="badgeB"><div class="title" id="badgeBTitle">Kabel B</div>
+            <div class="color-select"><div class="overlay" id="overlayB"></div><span class="value-pill" id="valueB"></span><select id="fiberSelB"></select></div>
+            <div id="badgeBTube">Tube: –</div>
+          </div><button class="arrow-btn" id="downB">▼</button>
+        </div>
+      </div>
+      <div class="small" style="text-align:center;margin-top:6px">Hurtigtaster: ▲/▼ = begge • Shift+▲/▼ = A • Ctrl+▲/▼ = B</div>
+    </div>
+
+    <!-- MULTI -->
+    <div id="multiWrap" class="multi-card hidden">
+      <div class="multi-grid">
+        <div class="subcard">
+          <div style="font-weight:700">Kabel A – intervall</div>
+          <div class="small">Velg Fra/Til (inkluderende)</div>
+          <label>Fra</label>
+          <div class="color-select cs-compact"><div class="overlay" id="mOverlayAFrom"></div><span class="value-pill" id="mValueAFrom"></span><select id="mSelAFrom"></select></div>
+          <label>Til</label>
+          <div class="inline-row">
+            <button id="mToMinus" class="btn" title="Kortere">−</button>
+            <div class="color-select cs-compact"><div class="overlay" id="mOverlayATo"></div><span class="value-pill" id="mValueATo"></span><select id="mSelATo"></select></div>
+            <button id="mToPlus" class="btn" title="Lengre">+</button>
+          </div>
+          <div class="small" id="lenInfo"></div>
+        </div>
+        <div class="subcard">
+          <div style="font-weight:700">Kabel B – start</div>
+          <div class="small">Serien mappes fra dette nummeret</div>
+          <label>Start</label>
+          <div class="inline-row">
+            <button id="mBMinus" class="btn" title="Start tidligere">−</button>
+            <div class="color-select cs-compact"><div class="overlay" id="mOverlayBStart"></div><span class="value-pill" id="mValueBStart"></span><select id="mSelBStart"></select></div>
+            <button id="mBPlus" class="btn" title="Start senere">+</button>
+          </div>
+          <button id="copyTable" class="btn" title="Kopier som HTML + TSV">Kopier tabell</button>
+          <div id="multiNote" class="small"></div>
+          <div id="rowInfo" class="chip-info">
+            <span id="rowCount">Rader: –</span>
+            <span id="rowWarn" class="chip-warn" style="display:none">Avkortet</span>
+            <span id="limitInfo" class="chip-warn" style="display:none"></span>
+          </div>
+        </div>
+      </div>
+      <div id="tableWrap"></div>
+    </div>
+
+  </div>
+
+<script>
+/* === Fargekoder === */
+const SCHEMES = {
+  "tia": ["Blå","#0072CE","Oransje","#FF6A00","Grønn","#2CA02C","Brun","#8B4513","Skifer","#708090","Hvit","#FFFFFF","Rød","#E41A1C","Svart","#111111","Gul","#FFD700","Fiolett","#7B1FA2","Rosa","#FF69B4","Aqua","#00B7C3"],
+  "s12altibox": ["Rød","#E41A1C","Blå","#0072CE","Hvit","#FFFFFF","Grønn","#2CA02C","Gul","#FFD700","Grå","#708090","Brun","#8B4513","Svart","#111111","Fiolett","#7B1FA2","Oransje","#FF6A00","Turkis","#00B7C3","Rosa","#FF69B4"],
+  "tn": ["Hvit","#FFFFFF","Rød","#E41A1C","Gul","#FFD700","Grønn","#2CA02C","Blå","#0072CE","Grå","#708090","Brun","#8B4513","Svart","#111111","Fiolett","#7B1FA2","Turkis","#00B7C3","Oransje","#FF6A00","Rosa","#FF69B4"]
+};
+const TUBE_SCHEMES = {
+  "tn": ["Rød","#E41A1C","Grønn","#2CA02C","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF"],
+  "s12altibox": ["Rød","#E41A1C","Blå","#0072CE","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF","Hvit","#FFFFFF"],
+  "tia": [...SCHEMES.tia]
+};
+
+/* Helpers */
+function colorForIndex(list, idx){ const i=(idx*2)%list.length; return {name:list[i], hex:list[i+1]}; }
+function pickTextColor(hex){ const h=hex.replace("#",""); const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16); const L=(0.2126*r+0.7152*g+0.0722*b)/255; return L>0.6?"#111":"#fff"; }
+
+/* PNG-chip (Teams-vennlig): returnerer data:URL */
+function chipPNG(number, hex){
+  const scale=2; const w=56*scale, h=22*scale, r=11*scale;
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d');
+  // bakgrunn
+  ctx.fillStyle=hex; ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1*scale;
+  // rund rekt
+  const rr=(x,y,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  rr(0.5*scale,0.5*scale,w-1*scale,h-1*scale,r);
+  ctx.fill(); ctx.stroke();
+  // tekst
+  ctx.fillStyle=pickTextColor(hex);
+  ctx.font=`${10*scale}px "Segoe UI", Arial, sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(String(number), w/2, h/2+0.5*scale);
+  return c.toDataURL('image/png');
+}
+
+/* State */
+function getSize(p){ return parseInt(document.getElementById("size"+p).value,10); }
+function getScheme(p){ return document.getElementById("scheme"+p).value; }
+
+/* SINGLE */
+function getFiberIndex(p){ return Math.max(0, parseInt(document.getElementById("fiberSel"+p).value||"1",10)-1); }
+function setFiberIndex(p, idx){ const size=getSize(p); const c=Math.min(Math.max(idx,0), size-1); document.getElementById("fiberSel"+p).value=String(c+1); }
+function fillFiberSelect(p){ const size=getSize(p), sel=document.getElementById("fiberSel"+p), prev=Math.max(0, parseInt(sel.value||"1",10)-1); sel.innerHTML=""; for(let i=1;i<=size;i++){ const o=document.createElement("option"); o.value=String(i); o.textContent=String(i); sel.appendChild(o); } setFiberIndex(p, Math.min(prev,size-1)); }
+function updateBadge(p){
+  const idx=getFiberIndex(p), sch=getScheme(p), col=colorForIndex(SCHEMES[sch], idx%12), tubeNum=Math.floor(idx/12)+1;
+  const title=(document.getElementById("name"+p).value||"").trim()||("Kabel "+p);
+  document.getElementById(p==="A"?"badgeATitle":"badgeBTitle").textContent=title;
+  const overlay=document.getElementById(p==="A"?"overlayA":"overlayB"); const valuePill=document.getElementById(p==="A"?"valueA":"valueB");
+  overlay.style.background=col.hex; valuePill.textContent=String(idx+1);
+  document.getElementById("fiberSel"+p).title=col.name;
+  document.getElementById(p==="A"?"badgeATube":"badgeBTube").textContent=`Tube: ${tubeNum}`;
+  updateTubeLine(p, tubeNum, sch);
+}
+function updateTubeLine(p, tubeNum, sch){ const tArr=TUBE_SCHEMES[sch], tCol=colorForIndex(tArr,(tubeNum-1)%12); document.getElementById("tube"+p).innerHTML = `Tube: ${tubeNum} &nbsp; <span>${tCol.name}</span>`; }
+function jump(p, d){ const size=getSize(p), idx=getFiberIndex(p), n=idx+d; if(n<0||n>size-1) return; setFiberIndex(p,n); updateBadge(p); }
+function jumpBoth(d){ const sa=getSize("A"), sb=getSize("B"), ia=getFiberIndex("A"), ib=getFiberIndex("B"); const na=ia+d, nb=ib+d; const okA=na>=0&&na<=sa-1, okB=nb>=0&&nb<=sb-1; if(!okA&&!okB) return; if(okA) setFiberIndex("A",na); if(okB) setFiberIndex("B",nb); updateBadge("A"); updateBadge("B"); }
+
+/* MULTI (logikk som før, inkl. caps/varsler) */
+let multiSpanLen = 2;
+function fillRangeSelect(id, size){ const sel=document.getElementById(id), prev=parseInt(sel.value||"1",10)-1; sel.innerHTML=""; for(let i=1;i<=size;i++){ const o=document.createElement("option"); o.value=String(i); o.textContent=String(i); sel.appendChild(o);} sel.value=String(Math.min(Math.max(prev,0),size-1)+1);}
+function getSelNum(id){ return Math.max(1, parseInt(document.getElementById(id).value||"1",10)); }
+function setRangeOverlayAndPill(posId, overlayId, pillId, schemeKey){ const idx=getSelNum(posId)-1, col=colorForIndex(SCHEMES[schemeKey], idx%12); document.getElementById(overlayId).style.background=col.hex; document.getElementById(pillId).textContent=String(idx+1); document.getElementById(posId).title=col.name; }
+function maxToNoTrunc(fromA,sizeA,startB,sizeB){ const maxLenB=Math.max(0,sizeB-startB+1); const limitByB=fromA+maxLenB-1; return Math.min(sizeA, limitByB); }
+function showLimit(reason){ const el=document.getElementById("limitInfo"); if(!reason){ el.style.display="none"; el.textContent=""; return; } el.style.display="inline-flex"; el.textContent=(reason==="B")?"Begrenset av Kabel B":"Begrenset av Kabel A"; }
+function onChangeFrom(){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); let desired=Math.max(multiSpanLen,2); let to=from+desired-1; const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } if(to<from+1) to=Math.min(cap,from+1); document.getElementById("mSelATo").value=String(to); multiSpanLen=to-from+1; updateLenInfo(); }
+function onChangeTo(adjustLen=true){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); let to=getSelNum("mSelATo"); if(to<from+1) to=from+1; if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } document.getElementById("mSelATo").value=String(to); if(adjustLen) multiSpanLen=to-from+1; updateLenInfo(); }
+function incTo(d){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); let to=getSelNum("mSelATo")+d; if(to<from+1) to=from+1; if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } document.getElementById("mSelATo").value=String(to); multiSpanLen=to-from+1; refreshMultiUI(false); }
+function incBStart(d){ const sizeB=getSize("B"); let start=getSelNum("mSelBStart")+d; if(start<1) start=1; if(start>sizeB) start=sizeB; document.getElementById("mSelBStart").value=String(start); onChangeTo(false); refreshMultiUI(false); }
+function updateLenInfo(){ const from=getSelNum("mSelAFrom"), to=getSelNum("mSelATo"); const len=to-from+1; document.getElementById("lenInfo").textContent=`Lengde: ${len} fiber`; }
+
+/* TABELL med IMG data:URL-chips (Teams OK) */
+function buildMapping(){
+  const swap=document.getElementById("swapAB").checked;
+  const sizeA=getSize("A"), sizeB=getSize("B"), schA=getScheme("A"), schB=getScheme("B");
+  let fromA=getSelNum("mSelAFrom"), toA=getSelNum("mSelATo"); if(toA<fromA){ const t=fromA; fromA=toA; toA=t; }
+  const startB=getSelNum("mSelBStart");
+  const lenA=Math.max(0,toA-fromA+1), lenB=Math.max(0,sizeB-startB+1), rows=Math.max(0,Math.min(lenA,lenB));
+
+  const nameA=(document.getElementById("nameA").value||"Kabel A").trim();
+  const nameB=(document.getElementById("nameB").value||"Kabel B").trim();
+
+  let h1="Tube A", h2=nameA, h3="⇆", h4=nameB, h5="Tube B";
+  if(swap){ h1="Tube B"; h2=nameB; h4=nameA; h5="Tube A"; }
+
+  let html=`<table style="border-collapse:collapse;width:100%;">
+    <thead><tr>
+      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h1}</th>
+      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h2}</th>
+      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h3}</th>
+      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h4}</th>
+      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h5}</th>
+    </tr></thead><tbody>`;
+
+  let tsv = swap
+    ? `B_tube\tB_fiber\tB_farge\t<->\tA_fiber\tA_farge\tA_tube\n`
+    : `A_tube\tA_fiber\tA_farge\t<->\tB_fiber\tB_farge\tB_tube\n`;
+
+  for(let i=0;i<rows;i++){
+    const fA=fromA+i, fB=startB+i;
+    const tubeA=Math.floor((fA-1)/12)+1, tubeB=Math.floor((fB-1)/12)+1;
+    const colA=colorForIndex(SCHEMES[schA], (fA-1)%12), colB=colorForIndex(SCHEMES[schB], (fB-1)%12);
+
+    const chipA = `<img src="${chipPNG(fA, colA.hex)}" width="56" height="22" alt="${fA}">`;
+    const chipB = `<img src="${chipPNG(fB, colB.hex)}" width="56" height="22" alt="${fB}">`;
+
+    // mini-tabell for stabil sentrering
+    const cellA = `<table style="border-collapse:collapse;margin:auto"><tr><td style="border:none;text-align:center">${chipA}</td></tr><tr><td style="border:none;text-align:center">${colA.name}</td></tr></table>`;
+    const cellB = `<table style="border-collapse:collapse;margin:auto"><tr><td style="border:none;text-align:center">${chipB}</td></tr><tr><td style="border:none;text-align:center">${colB.name}</td></tr></table>`;
+
+    let c1=`#${tubeA}`, c2=cellA, c3="⇆", c4=cellB, c5=`#${tubeB}`;
+    if(swap){ c1=`#${tubeB}`; c2=cellB; c4=cellA; c5=`#${tubeA}`; }
+
+    html += `<tr>
+      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c1}</td>
+      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c2}</td>
+      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c3}</td>
+      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c4}</td>
+      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c5}</td>
+    </tr>`;
+
+    tsv += swap
+      ? `${tubeB}\t${fB}\t${colB.name}\t<->\t${fA}\t${colA.name}\t${tubeA}\n`
+      : `${tubeA}\t${fA}\t${colA.name}\t<->\t${fB}\t${colB.name}\t${tubeB}\n`;
+  }
+  html += `</tbody></table>`;
+
+  document.getElementById("rowCount").textContent=`Rader: ${rows}`;
+  const warn=(rows<lenA);
+  document.getElementById("rowWarn").style.display = warn ? "inline-flex" : "none";
+  document.getElementById("multiNote").textContent = warn ? `Avkortet: Kabel B har kun ${sizeB-startB+1} ledige fra start #${startB}.` : "";
+
+  document.getElementById("tableWrap").innerHTML = html;
+  return {html, tsv};
+}
+
+/* Copy */
+async function copyMapping(html, tsv){
+  try{
+    if(navigator.clipboard && window.ClipboardItem){
+      const blobHtml=new Blob([html],{type:"text/html"});
+      const blobText=new Blob([tsv],{type:"text/plain"});
+      await navigator.clipboard.write([new ClipboardItem({"text/html":blobHtml,"text/plain":blobText})]);
+      alert("Tabell kopiert (HTML + tekst). Lim inn i Teams.");
+    }else{ await navigator.clipboard.writeText(tsv); alert("Tabell kopiert som tekst (TSV)."); }
+  }catch(e){ console.error(e); alert("Kunne ikke kopiere. Marker tabellen og kopier manuelt (Ctrl/Cmd+C)."); }
+}
+
+/* Wire UI (uendret, bare bundet) */
+function attach(){
+  ["A","B"].forEach(p=>{
+    document.getElementById("size"+p).addEventListener("change", ()=>{ 
+      fillFiberSelect(p); updateBadge(p);
+      if(p==="A"){ fillRangeSelect("mSelAFrom", getSize("A")); fillRangeSelect("mSelATo", getSize("A")); onChangeFrom(); }
+      if(p==="B"){ fillRangeSelect("mSelBStart", getSize("B")); }
+      refreshMultiUI(false);
+    });
+    document.getElementById("scheme"+p).addEventListener("change", ()=>{ updateBadge(p); refreshMultiUI(false); });
+    document.getElementById("name"+p).addEventListener("input", ()=>{ updateBadge(p); refreshMultiUI(false); });
+    document.getElementById("resetName"+p).addEventListener("click", ()=>{ document.getElementById("name"+p).value=""; updateBadge(p); refreshMultiUI(false); });
+    document.getElementById("fiberSel"+p).addEventListener("change", ()=> updateBadge(p));
+  });
+  document.getElementById("upA").addEventListener("click", ()=> jump("A",-1));
+  document.getElementById("downA").addEventListener("click", ()=> jump("A",+1));
+  document.getElementById("upB").addEventListener("click", ()=> jump("B",-1));
+  document.getElementById("downB").addEventListener("click", ()=> jump("B",+1));
+  document.getElementById("upBoth").addEventListener("click", ()=> jumpBoth(-1));
+  document.getElementById("downBoth").addEventListener("click", ()=> jumpBoth(+1));
+
+  document.getElementById("toggleGrid").addEventListener("click", ()=>{ document.getElementById("mainGrid").classList.toggle("hidden"); });
+
+  document.getElementById("modeSel").addEventListener("change", ()=>{
+    const mode=document.getElementById("modeSel").value;
+    document.getElementById("singleWrap").classList.toggle("hidden", mode!=="single");
+    document.getElementById("multiWrap").classList.toggle("hidden", mode!=="multi");
+    if(mode==="multi"){ refreshMultiUI(false); }
+  });
+
+  // Multi
+  document.getElementById("mSelAFrom").addEventListener("change", ()=>{ onChangeFrom(); refreshMultiUI(false); });
+  document.getElementById("mSelATo").addEventListener("change", ()=>{ onChangeTo(true); refreshMultiUI(false); });
+  document.getElementById("mToMinus").addEventListener("click", ()=> incTo(-1));
+  document.getElementById("mToPlus").addEventListener("click", ()=> incTo(+1));
+
+  document.getElementById("mSelBStart").addEventListener("change", ()=>{ onChangeTo(false); refreshMultiUI(false); });
+  document.getElementById("mBMinus").addEventListener("click", ()=> incBStart(-1));
+  document.getElementById("mBPlus").addEventListener("click", ()=> incBStart(+1));
+
+  document.getElementById("swapAB").addEventListener("change", ()=> buildMapping());
+  document.getElementById("copyTable").addEventListener("click", ()=>{ const {html,tsv}=buildMapping(); copyMapping(html,tsv); });
+
+  // Tastatur (single)
+  document.addEventListener("keydown", (e)=>{
+    if(e.key==="ArrowUp" || e.key==="ArrowDown"){
+      const delta=e.key==="ArrowUp"?-1:+1;
+      if(document.getElementById("modeSel").value==="single"){
+        if(e.shiftKey){ jump("A",delta); }
+        else if(e.ctrlKey){ jump("B",delta); }
+        else { jumpBoth(delta); }
+        e.preventDefault();
+      }
+    }
+  });
+}
+
+function refreshMultiUI(rebuild=true){
+  const sizeA=getSize("A"), sizeB=getSize("B");
+  if(rebuild){ fillRangeSelect("mSelAFrom", sizeA); fillRangeSelect("mSelATo", sizeA); fillRangeSelect("mSelBStart", sizeB); }
+  onChangeTo(false);
+  setRangeOverlayAndPill("mSelAFrom","mOverlayAFrom","mValueAFrom", getScheme("A"));
+  setRangeOverlayAndPill("mSelATo","mOverlayATo","mValueATo", getScheme("A"));
+  setRangeOverlayAndPill("mSelBStart","mOverlayBStart","mValueBStart", getScheme("B"));
+  updateLenInfo();
+  buildMapping();
+}
+
+function init(){
+  fillFiberSelect("A"); fillFiberSelect("B");
+  setFiberIndex("A",0); setFiberIndex("B",0);
+  updateBadge("A"); updateBadge("B");
+  refreshMultiUI();
+  attach();
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
