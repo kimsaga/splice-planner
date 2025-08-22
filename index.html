@@ -55,10 +55,14 @@
   .chip-info{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);padding:6px 10px;border-radius:999px;margin-top:8px}
   .chip-warn{display:inline-flex;align-items:center;gap:8px;background:var(--warn);color:var(--warnText);padding:6px 10px;border-radius:999px;margin-left:8px;font-weight:700}
 
+  /* Table base styles */
   table{width:100%;border-collapse:collapse;margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}
-  thead th{background:#f0ece6;font-weight:700;padding:10px;border-bottom:1px solid var(--border);font-size:15px;text-align:center}
-  tbody td{padding:10px;border-bottom:1px solid var(--border);font-size:14px;text-align:center;vertical-align:middle}
+  thead th{background:#f0ece6;font-weight:700;padding:10px;border-bottom:1px solid var(--border);font-size:15px}
+  tbody td{padding:10px;border-bottom:1px solid var(--border);font-size:14px}
   tbody tr:last-child td{border-bottom:none}
+
+  /* NEW: force all cells centered, vertically and horizontally */
+  th, td { text-align:center; vertical-align:middle; }
 
   /* Modal */
   .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9999}
@@ -344,7 +348,6 @@ function onChangeFrom(){ const sizeA=getSize("A"), sizeB=getSize("B"); const fro
 function onChangeTo(adjustLen=true){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); let to=getSelNum("mSelATo"); if(to<from+1) to=from+1; if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } document.getElementById("mSelATo").value=String(to); if(adjustLen) multiSpanLen=to-from+1; enforceBStartCap(); updateLenInfo(); }
 function incTo(d){ const sizeA=getSize("A"), sizeB=getSize("B"); const from=getSelNum("mSelAFrom"); const cap=maxToNoTrunc(from,sizeA,getSelNum("mSelBStart"),sizeB); let to=getSelNum("mSelATo")+d; if(to<from+1) to=from+1; if(to>cap){ to=cap; showLimit(cap===sizeA?"A":"B"); } else { showLimit(""); } document.getElementById("mSelATo").value=String(to); multiSpanLen=to-from+1; enforceBStartCap(); refreshMultiUI(false); }
 function enforceBStartCap(){
-  // Hard stop on B-start so we don't lose rows
   const sizeB=getSize("B");
   const from=getSelNum("mSelAFrom");
   const to=getSelNum("mSelATo");
@@ -374,7 +377,6 @@ function buildMapping(){
   let fromA=getSelNum("mSelAFrom"), toA=getSelNum("mSelATo"); if(toA<fromA){ const t=fromA; fromA=toA; toA=t; }
   let startB=getSelNum("mSelBStart");
   const lenA=Math.max(0,toA-fromA+1);
-  // enforce hard stop on B-start here too
   const maxStartB = Math.max(1, sizeB - lenA + 1);
   if(startB>maxStartB){ startB=maxStartB; document.getElementById("mSelBStart").value=String(startB); }
 
@@ -386,13 +388,13 @@ function buildMapping(){
   let h1="Tube A", h2=nameA, h3="⇆", h4=nameB, h5="Tube B";
   if(swap){ h1="Tube B"; h2=nameB; h4=nameA; h5="Tube A"; }
 
-  let html=`<table style="border-collapse:collapse;width:100%; background:#fff;">
+  let html=`<table>
     <thead><tr>
-      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h1}</th>
-      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h2}</th>
-      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h3}</th>
-      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h4}</th>
-      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h5}</th>
+      <th>${h1}</th>
+      <th>${h2}</th>
+      <th>${h3}</th>
+      <th>${h4}</th>
+      <th>${h5}</th>
     </tr></thead><tbody>`;
 
   let tsv = swap ? `B_tube\tB_fiber\tB_color\t<->\tA_fiber\tA_color\tA_tube\n`
@@ -411,11 +413,11 @@ function buildMapping(){
     if(swap){ c1=`#${tubeB}`; c2=cellB; c4=cellA; c5=`#${tubeA}`; }
 
     html += `<tr>
-      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c1}</td>
-      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c2}</td>
-      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c3}</td>
-      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c4}</td>
-      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c5}</td>
+      <td>${c1}</td>
+      <td>${c2}</td>
+      <td>${c3}</td>
+      <td>${c4}</td>
+      <td>${c5}</td>
     </tr>`;
 
     tsv += swap ? `${tubeB}\t${fB}\t${colB.name}\t<->\t${fA}\t${colA.name}\t${tubeA}\n`
@@ -562,13 +564,13 @@ function buildPONTable(){
   let h1="Band", h2=nameSplit+" – Output", h3="⇆", h4=nameB, h5="Tube B";
   if(swap){ h1="Tube B"; h2=nameB; h4=nameSplit+" – Output"; h5="Band"; }
 
-  let html=`<table style="border-collapse:collapse;width:100%; background:#fff;">
+  let html=`<table>
     <thead><tr>
-      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h1}</th>
-      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h2}</th>
-      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h3}</th>
-      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h4}</th>
-      <th style="border:1px solid #ddd;background:#f3efe9;padding:8px 10px;text-align:center;">${h5}</th>
+      <th>${h1}</th>
+      <th>${h2}</th>
+      <th>${h3}</th>
+      <th>${h4}</th>
+      <th>${h5}</th>
     </tr></thead><tbody>`;
 
   let tsv = swap
@@ -594,11 +596,11 @@ function buildPONTable(){
     if(swap){ c1=`#${tubeB}`; c2=cellB; c4=cellS; c5=`#${band}`; }
 
     html += `<tr>
-      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c1}</td>
-      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c2}</td>
-      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c3}</td>
-      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c4}</td>
-      <td style="border:1px solid #ddd;padding:8px 10px;text-align:center;">${c5}</td>
+      <td>${c1}</td>
+      <td>${c2}</td>
+      <td>${c3}</td>
+      <td>${c4}</td>
+      <td>${c5}</td>
     </tr>`;
 
     tsv += swap
@@ -651,7 +653,6 @@ async function exportTableAsPNG(containerId, filename, tryClipboard=true){
   downloadBlob(blob, filename);
 }
 async function sharePNG(containerId, filename){
-  // Render up-to-date table
   if(containerId==='tableWrap'){ const {html}=buildMapping(); document.getElementById(containerId).innerHTML=html; }
   else if(containerId==='ponTableWrap'){ const {html}=buildPONTable(); document.getElementById(containerId).innerHTML=html; }
   const holder=document.getElementById(containerId);
